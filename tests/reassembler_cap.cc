@@ -146,6 +146,97 @@ int main()
       test.execute( ReadAll( "c" ) );
       test.execute( IsFinished { true } );
     }
+
+    // test credit: Parth Sarthi
+    {
+      ReassemblerTestHarness test { "last index exactly fills capacity", 2 };
+
+      test.execute( Insert { "a", 0 } );
+      test.execute( Insert { "b", 1 } );
+      test.execute( ReadAll( "ab" ) );
+
+      test.execute( Insert { "c", 2 } );
+      test.execute( ReadAll( "c" ) );
+
+      test.execute( Insert { "de", 3 }.is_last() );
+      test.execute( ReadAll( "de" ) );
+
+      test.execute( IsFinished { true } );
+    }
+
+    // test credit: Parth Sarthi
+    {
+      ReassemblerTestHarness test { "last index is unacceptable", 2 };
+
+      test.execute( Insert { "a", 0 } );
+      test.execute( Insert { "b", 1 } );
+      test.execute( ReadAll( "ab" ) );
+
+      test.execute( Insert { "c", 2 } );
+      test.execute( ReadAll( "c" ) );
+
+      test.execute( Insert { "def", 3 }.is_last() );
+      test.execute( ReadAll( "de" ) );
+
+      test.execute( IsFinished { false } );
+    }
+
+    // test credit: Andy Wang
+    {
+      ReassemblerTestHarness test { "insert beyond capacity at colossally gigantic index", 3 };
+
+      test.execute( Insert { "b", 1 }.is_last() );
+      test.execute( BytesPushed( 0 ) );
+      test.execute( BytesPending( 1 ) );
+
+      test.execute( Insert { "z", UINT64_MAX } );
+      test.execute( BytesPushed( 0 ) );
+      test.execute( BytesPending( 1 ) );
+
+      test.execute( Insert { "xyz", UINT64_MAX - 1 } );
+      test.execute( BytesPushed( 0 ) );
+      test.execute( BytesPending( 1 ) );
+
+      test.execute( Insert { "a", 0 } );
+      test.execute( BytesPushed( 2 ) );
+      test.execute( BytesPending( 0 ) );
+      test.execute( ReadAll( "ab" ) );
+      test.execute( IsFinished( true ) );
+    }
+
+    // test credit: Andy Wang
+    {
+      ReassemblerTestHarness test { "Fully utilize reassembler buffer capacity", 10 };
+
+      test.execute( Insert { "bcde", 1 } );
+      test.execute( BytesPushed( 0 ) );
+      test.execute( BytesPending( 4 ) );
+
+      test.execute( Insert { "a", 0 } );
+      test.execute( BytesPushed( 5 ) );
+      test.execute( BytesPending( 0 ) );
+      test.execute( ReadAll( "abcde" ) );
+
+      test.execute( Insert { "ghijklmno", 6 } );
+      test.execute( BytesPushed( 5 ) );
+      test.execute( BytesPending( 9 ) );
+
+      test.execute( Insert { "f", 5 } );
+      test.execute( BytesPushed( 15 ) );
+      test.execute( BytesPending( 0 ) );
+      test.execute( ReadAll( "fghijklmno" ) );
+
+      test.execute( Insert { "rstuvwxy", 17 }.is_last() );
+      test.execute( BytesPushed( 15 ) );
+      test.execute( BytesPending( 8 ) );
+
+      test.execute( Insert { "pq", 15 } );
+      test.execute( BytesPushed( 25 ) );
+      test.execute( BytesPending( 0 ) );
+      test.execute( ReadAll( "pqrstuvwxy" ) );
+
+      test.execute( IsFinished( true ) );
+    }
   } catch ( const exception& e ) {
     cerr << "Exception: " << e.what() << "\n";
     return EXIT_FAILURE;
